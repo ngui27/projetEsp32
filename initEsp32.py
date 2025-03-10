@@ -1,15 +1,12 @@
-#testecommit
-#!/opt/homebrew/bin/python3.11  # Ajustez selon votre chemin (ex. /usr/local/bin/python3.11)
 import subprocess
 import serial.tools.list_ports
 import yaml
 import os
 import shutil
+import socket
+import re
 
-# Chemin où le fichier YAML temporaire sera généré
-CONFIG_PATH = "config/esphome_config/esp32_initial_config.yaml"
-
-# Trouver dynamiquement le chemin d'esphome
+CONFIG_PATH = "config/esphome_config/ESP32_initial_config.yaml"
 ESPHOME_PATH = shutil.which("esphome")
 if not ESPHOME_PATH:
     raise FileNotFoundError("Impossible de trouver 'esphome' dans le PATH. Assurez-vous qu'il est installé avec 'pip install esphome'.")
@@ -26,29 +23,56 @@ def find_esp32():
             return port.device
     return None
 
-def generate_initial_config():
+def get_local_ip():
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        local_ip = s.getsockname()[0]
+        s.close()
+        return local_ip
+    except Exception:
+        return "192.168.0.1"
+
+def find_available_ip():
+    base_ip = re.match(r"(\d+\.\d+\.\d+)\.\d+", get_local_ip()).group(1)
+    for i in range(100, 200):  # Cherche une IP entre .100 et .199
+        ip = f"{base_ip}.{i}"
+        if not is_ip_in_use(ip):
+            return ip
+    return f"{base_ip}.250"
+
+def is_ip_in_use(ip):
+    try:
+        socket.gethostbyaddr(ip)
+        return True
+    except socket.herror:
+        return False
+
+def generate_initial_config(esp_name):
+    static_ip = find_available_ip()
     config = {
         "esphome": {
-            "name": "esp32-sensor-detector",
-            "friendly_name": "Détecteur de capteurs ESP32"
+            "name": esp_name,
+            "friendly_name": f"ESP32 {esp_name}"
         },
         "esp32": {
             "board": "esp32dev",
             "framework": {"type": "arduino"}
         },
         "logger": {},
-        "api": {"encryption": {"key": "GL76O9M7dR7RXvLV9glBaXb0OMJVmfy8wjy/+iI+vKE="}},
-        "ota": {"platform": "esphome", "password": "c8c904f0b4be4fb42770692e07b57695"},
+        "api": {"encryption": {"key": "!secret api_key"}},
+        "ota": {"platform": "esphome", "password": "!secret ota_password"},
         "wifi": {
             "ssid": "!secret wifi_ssid",
             "password": "!secret wifi_password",
             "fast_connect": True,
             "manual_ip": {
-                "static_ip": "192.168.0.83",
+                "static_ip": static_ip,
                 "gateway": "192.168.0.1",
                 "subnet": "255.255.255.0"
             },
-            "ap": {"ssid": "ESP32 Fallback Hotspot", "password": "pv3VYxQMKQUE"}
+            "reboot_timeout": "0s",
+            "ap": {"ssid": f"{esp_name} Fallback Hotspot", "password": "pv3VYxQMKQUE"}
         },
         "sensor": []
     }
@@ -58,14 +82,12 @@ def generate_initial_config():
         config["sensor"].append({
             "platform": "adc",
             "pin": pin,
-            "name": f"Tension Capteur {i} (Détection)",
+            "name": f"Tension Capteur {i} ({esp_name})",
             "id": f"tension_capteur_{i}",
             "unit_of_measurement": "V",
             "update_interval": "5s",
             "attenuation": "12db",
-            "filters": [
-                {"median": {"window_size": 5, "send_every": 1, "send_first_at": 1}}
-            ]
+            "filters": [{"median": {"window_size": 5, "send_every": 1, "send_first_at": 1}}]
         })
 
     os.makedirs(os.path.dirname(CONFIG_PATH), exist_ok=True)
@@ -75,23 +97,15 @@ def generate_initial_config():
 
 def configure_esp32(port):
     if port:
-        print(f"ESP32 détecté sur {port}, génération de la configuration initiale...")
-        generate_initial_config()
+        esp_name = input("Entrez le nom de votre ESP32 : ")
+        print(f"ESP32 détecté sur {port}, génération de la configuration pour {esp_name}...")
+        generate_initial_config(esp_name)
         print(f"Flashing de la configuration sur {port}...")
-        # Vérifier si le port est accessible
-        max_attempts = 5
-        for attempt in range(max_attempts):
-            try:
-                subprocess.run(get_esphome_cmd(port), check=True)
-                print("Configuration initiale flashée avec succès !")
-                print("L'ESP32 devrait maintenant se connecter au WiFi et envoyer les données à Home Assistant.")
-                break
-            except subprocess.CalledProcessError as e:
-                if attempt < max_attempts - 1:
-                    print(f"Tentative {attempt + 1}/{max_attempts} échouée : {e}. Réessai dans 2 secondes...")
-                    time.sleep(2)
-                else:
-                    print(f"Erreur définitive lors du flashage après {max_attempts} tentatives : {e}")
+        try:
+            subprocess.run(get_esphome_cmd(port), check=True)
+            print("Configuration flashée avec succès !")
+        except subprocess.CalledProcessError as e:
+            print(f"Erreur lors du flashage : {e}")
     else:
         print("Aucun ESP32 détecté.")
 
