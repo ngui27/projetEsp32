@@ -7,7 +7,7 @@ esp32:
     type: arduino
 esphome:
   friendly_name: "D\xE9tecteur de capteurs ESP32"
-  name: esp32_sensor_detector
+  name: esp32-sensor-detector
 logger: {}
 ota:
   password: c8c904f0b4be4fb42770692e07b57695
@@ -21,7 +21,7 @@ sensor:
       window_size: 5
   id: tension_capteur_1
   name: "Tension Capteur 1 (D\xE9tection)"
-  pin: GPIO34
+  pin: GPIO32
   platform: adc
   unit_of_measurement: V
   update_interval: 5s
@@ -33,7 +33,7 @@ sensor:
       window_size: 5
   id: tension_capteur_2
   name: "Tension Capteur 2 (D\xE9tection)"
-  pin: GPIO35
+  pin: GPIO33
   platform: adc
   unit_of_measurement: V
   update_interval: 5s
@@ -45,7 +45,7 @@ sensor:
       window_size: 5
   id: tension_capteur_3
   name: "Tension Capteur 3 (D\xE9tection)"
-  pin: GPIO33
+  pin: GPIO34
   platform: adc
   unit_of_measurement: V
   update_interval: 5s
@@ -57,7 +57,7 @@ sensor:
       window_size: 5
   id: tension_capteur_4
   name: "Tension Capteur 4 (D\xE9tection)"
-  pin: GPIO32
+  pin: GPIO35
   platform: adc
   unit_of_measurement: V
   update_interval: 5s
@@ -81,55 +81,7 @@ sensor:
       window_size: 5
   id: tension_capteur_6
   name: "Tension Capteur 6 (D\xE9tection)"
-  pin: GPIO25
-  platform: adc
-  unit_of_measurement: V
-  update_interval: 5s
-- attenuation: 12db
-  filters:
-  - median:
-      send_every: 1
-      send_first_at: 1
-      window_size: 5
-  id: tension_capteur_7
-  name: "Tension Capteur 7 (D\xE9tection)"
-  pin: GPIO26
-  platform: adc
-  unit_of_measurement: V
-  update_interval: 5s
-- attenuation: 12db
-  filters:
-  - median:
-      send_every: 1
-      send_first_at: 1
-      window_size: 5
-  id: tension_capteur_8
-  name: "Tension Capteur 8 (D\xE9tection)"
-  pin: GPIO27
-  platform: adc
-  unit_of_measurement: V
-  update_interval: 5s
-- attenuation: 12db
-  filters:
-  - median:
-      send_every: 1
-      send_first_at: 1
-      window_size: 5
-  id: tension_capteur_9
-  name: "Tension Capteur 9 (D\xE9tection)"
-  pin: GPIO14
-  platform: adc
-  unit_of_measurement: V
-  update_interval: 5s
-- attenuation: 12db
-  filters:
-  - median:
-      send_every: 1
-      send_first_at: 1
-      window_size: 5
-  id: tension_capteur_10
-  name: "Tension Capteur 10 (D\xE9tection)"
-  pin: GPIO13
+  pin: GPIO39
   platform: adc
   unit_of_measurement: V
   update_interval: 5s
